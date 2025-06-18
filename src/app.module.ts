@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { configuration, validationSchema } from './config/configuration';
+import { SunatModule } from './sunat/sunat.module';
 
 @Module({
   imports: [
@@ -10,6 +11,7 @@ import { configuration, validationSchema } from './config/configuration';
       load: [configuration],
       validationSchema,
     }),
+    SunatModule,
   ],
 })
 export class AppModule {}
