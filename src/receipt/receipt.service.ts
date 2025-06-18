@@ -9,6 +9,7 @@ import { SunatService } from '../sunat/sunat.service';
 import { ICreateReceiptDto } from './dto/create-receipt.dto';
 import { IUpdateStatusReceiptDto } from './dto/update-status-receipt.dto';
 
+import { EDocumentType } from './enum/EDocumentType.enum';
 import { IReceiptQueryParams } from './interfaces/receipt-query-params.interface';
 
 @Injectable()
@@ -31,7 +32,7 @@ export class ReceiptService {
    */
   async create(createReceiptDto: ICreateReceiptDto) {
     const validationSunat = this.sunatService.validateSunatData({
-      type: createReceiptDto.documentType.toString(),
+      type: createReceiptDto.documentType as EDocumentType,
       value: createReceiptDto.documentNumber,
     });
 

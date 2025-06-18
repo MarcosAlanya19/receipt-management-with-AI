@@ -18,8 +18,8 @@ Este proyecto es una API desarrollada con **NestJS** sobre la plataforma **Encor
 
 1. **Clonar el proyecto**
    ```bash
-   git clone https://github.com/tu-usuario/tu-proyecto.git
-   cd tu-proyecto
+   git clone https://github.com/MarcosAlanya19/receipt-management-with-AI
+   cd receipt-management-with-AI
    ```
 
 2. **Instalar dependencias**
