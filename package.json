@@ -21,11 +21,11 @@
     "prisma:generate": "npx prisma generate --schema=src/prisma/schema.prisma",
     "prisma:migrate": "npx prisma migrate dev --schema=src/prisma/schema.prisma",
     "prisma:studio": "npx prisma studio --schema=src/prisma/schema.prisma",
-    "prisma:reset": "npx prisma migrate reset --force --schema=src/prisma/schema.prisma"
+    "prisma:reset": "npx prisma migrate reset --force --schema=src/prisma/schema.prisma",
+    "prisma:seed": "tsx src/prisma/seed.ts"
   },
   "prisma": {
-    "schema": "src/prisma/schema.prisma",
-    "seed": "tsx src/prisma/seed.ts"
+    "schema": "src/prisma/schema.prisma"
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.0",

@@ -37,12 +37,12 @@ Este proyecto es una API desarrollada con **NestJS** sobre la plataforma **Encor
 
 4. **Inicializar base de datos**
    ```bash
-   npx prisma migrate dev
+   npm run prisma:migrate
    ```
 
 5. **Correr seed**
    ```bash
-   npm run seed
+   npm run prisma:seed
    ```
 
 5. **Ejecutar en desarrollo**
