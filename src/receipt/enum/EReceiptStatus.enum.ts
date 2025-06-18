@@ -1,0 +1,6 @@
+export enum EReceiptStatus {
+  PENDING = 'PENDING',
+  VALIDATED = 'VALIDATED',
+  REJECTED = 'REJECTED',
+  OBSERVED = 'OBSERVED',
+}

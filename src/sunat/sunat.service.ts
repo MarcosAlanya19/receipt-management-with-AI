@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DocumentType } from '@prisma/client';
+import { EDocumentType } from '../receipt/enum/EDocumentType.enum';
 import { ISunatValidationDto } from './dto/sunat-validation.dto';
 import { ISunatResponse } from './interfaces/sunat-response.interface';
 
@@ -7,48 +8,34 @@ import { ISunatResponse } from './interfaces/sunat-response.interface';
 export class SunatService {
   validateSunatData({ type, value }: ISunatValidationDto): ISunatResponse {
     console.log('Validating SUNAT data:', { type, value });
+
     if (type === DocumentType.RUC) {
       if (value === '20123456789') {
         return {
           success: true,
-          message: 'Valid RUC',
-          data: {
-            name: 'EMPRESA SAC',
-            status: 'ACTIVE',
-            condition: 'HABIDO',
-            address: '123 PERU AVE',
-          },
+          name: 'EMPRESA SAC',
+          status: 'ACTIVE',
+          condition: 'HABIDO',
+          address: '123 PERU AVE',
         };
       }
 
-      return {
-        success: false,
-        message: 'RUC not found',
-      };
+      return { success: false };
     }
 
-    if (type === DocumentType.DNI) {
+    if (type === EDocumentType.DNI) {
       if (value === '12345678') {
         return {
           success: true,
-          message: 'Valid DNI',
-          data: {
-            name: 'JUAN PEREZ',
-            status: 'ACTIVE',
-            condition: 'HABIDO',
-          },
+          name: 'JUAN PEREZ',
+          status: 'ACTIVE',
+          condition: 'HABIDO',
         };
       }
 
-      return {
-        success: false,
-        message: 'DNI not found',
-      };
+      return { success: false };
     }
 
-    return {
-      success: false,
-      message: 'Invalid document type',
-    };
+    return { success: false };
   }
 }

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { configuration, validationSchema } from './config/configuration';
+import { configuration, validationSchema } from './config';
 
 import { ReceiptModule } from './receipt/receipt.module';
 import { SunatModule } from './sunat/sunat.module';

@@ -1,15 +1,17 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { DocumentType, ReceiptStatus } from '@prisma/client';
+import { ReceiptStatus } from '@prisma/client';
 import { prisma } from '../prisma/database';
 
 import { SunatService } from '../sunat/sunat.service';
 
 import { ICreateReceiptDto } from './dto/create-receipt.dto';
 import { IUpdateStatusReceiptDto } from './dto/update-status-receipt.dto';
+import { EDocumentType } from './enum/EDocumentType.enum';
+import { EReceiptStatus } from './enum/EReceiptStatus.enum';
 
 @Injectable()
 export class ReceiptService {
-  constructor(private sunatService: SunatService) { }
+  constructor(private sunatService: SunatService) {}
   setDependencies(sunatService: SunatService) {
     this.sunatService = sunatService;
   }
@@ -21,7 +23,7 @@ export class ReceiptService {
     });
 
     if (!validationSunat.success) {
-      throw new BadRequestException(validationSunat.message);
+      throw new BadRequestException('Document not found');
     }
 
     const igv = Number((createReceiptDto.amount * 0.18).toFixed(2));
@@ -34,14 +36,11 @@ export class ReceiptService {
         total,
         status: ReceiptStatus.PENDING,
         issueDate: new Date(createReceiptDto.issueDate),
-        documentType: createReceiptDto.documentType as DocumentType,
+        documentType: createReceiptDto.documentType as EDocumentType,
       },
     });
 
     return receipt;
-  }
-  findAll() {
-    return `This action returns all receipt`;
   }
 
   async findOne(id: string) {
@@ -57,14 +56,17 @@ export class ReceiptService {
     const receiptUpdated = await prisma.receipt.update({
       data: {
         ...receipt,
-        status: updateReceiptDto.status as ReceiptStatus,
+        status: updateReceiptDto.status as EReceiptStatus,
       },
       where: { id },
     });
     return receiptUpdated;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} receipt`;
+  async remove(id: string) {
+    const receiptRemoved = await prisma.receipt.delete({
+      where: { id },
+    });
+    return receiptRemoved;
   }
 }

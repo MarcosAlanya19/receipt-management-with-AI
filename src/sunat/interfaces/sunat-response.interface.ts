@@ -1,10 +1,9 @@
-export interface ISunatResponse {
+export interface ISunat {
+  name?: string;
+  status?: string;
+  condition?: string;
+  address?: string;
   success: boolean;
-  message: string;
-  data?: {
-    name: string;
-    status: string;
-    condition: string;
-    address?: string;
-  };
 }
+
+export type ISunatResponse = ISunat;
