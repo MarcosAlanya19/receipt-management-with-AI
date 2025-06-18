@@ -14,6 +14,13 @@ Este proyecto es una API desarrollada con **NestJS** sobre la plataforma **Encor
 - `POST`: Enviar pregunta basada en comprobantes exportados (CSV).  
   **Body:** `{ "prompt": "¿Cuál fue el monto total validado en mayo?" }`
 
+## Dashboard
+Para realizar pruebas localmente, puedes utilizar el Dashboard de Encore para NestJS, el cual cuenta con tipado integrado para evitar errores comunes.
+Accede a la siguiente URL una vez que el entorno esté corriendo:
+
+http://127.0.0.1:9400/qompa-zhhi/envs/local/api/nest/aiQueryOpenAI
+![alt text](image.png)
+
 ## 🛠️ Instalación y configuración
 
 1. **Clonar el proyecto**
