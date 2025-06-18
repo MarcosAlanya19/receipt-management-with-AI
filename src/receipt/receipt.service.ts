@@ -1,13 +1,14 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { ReceiptStatus } from '@prisma/client';
+import { DocumentType, ReceiptStatus } from '@prisma/client';
+import currency from 'currency.js';
+import { DateTime } from 'luxon';
 import { prisma } from '../prisma/database';
 
 import { SunatService } from '../sunat/sunat.service';
 
 import { ICreateReceiptDto } from './dto/create-receipt.dto';
 import { IUpdateStatusReceiptDto } from './dto/update-status-receipt.dto';
-import { EDocumentType } from './enum/EDocumentType.enum';
-import { EReceiptStatus } from './enum/EReceiptStatus.enum';
+
 import { IReceiptQueryParams } from './interfaces/receipt-query-params.interface';
 
 @Injectable()
@@ -17,6 +18,17 @@ export class ReceiptService {
     this.sunatService = sunatService;
   }
 
+  /**
+   * Crea un nuevo recibo en el sistema.
+   *
+   * Validaciones:
+   * - Verifica que el documento exista usando el servicio SUNAT.
+   * - Calcula el IGV y el total usando `ReceiptCalculator`.
+   *
+   * @param createReceiptDto Datos del recibo a registrar.
+   * @returns El recibo creado.
+   * @throws BadRequestException Si el documento no existe.
+   */
   async create(createReceiptDto: ICreateReceiptDto) {
     const validationSunat = this.sunatService.validateSunatData({
       type: createReceiptDto.documentType.toString(),
@@ -24,44 +36,47 @@ export class ReceiptService {
     });
 
     if (!validationSunat.success) {
-      throw new BadRequestException('Document not found');
+      throw new BadRequestException('Documento no encontrado');
     }
 
-    const igv = Number((createReceiptDto.amount * 0.18).toFixed(2));
-    const total = Number((createReceiptDto.amount + igv).toFixed(2));
+    const { igv, total } = this.calculateAmounts(createReceiptDto.amount);
 
-    const receipt = await prisma.receipt.create({
+    return await prisma.receipt.create({
       data: {
         ...createReceiptDto,
         igv,
         total,
         status: ReceiptStatus.PENDING,
-        issueDate: new Date(createReceiptDto.issueDate),
-        documentType: createReceiptDto.documentType as EDocumentType,
+        issueDate: DateTime.fromISO(createReceiptDto.issueDate).toJSDate(),
+        documentType: createReceiptDto.documentType as DocumentType,
       },
     });
-
-    return receipt;
   }
 
-  async findOne(id: string) {
-    const findReceipt = await prisma.receipt.findUnique({ where: { id } });
-    if (!findReceipt) {
-      throw new BadRequestException(`Receipt with id ${id} not found`);
-    }
-    return findReceipt;
-  }
-
+  /**
+   * Obtiene una lista paginada de recibos según filtros opcionales.
+   *
+   * Filtros disponibles:
+   * - Rango de fechas (`from`, `to`)
+   * - Tipo de documento (`type`)
+   * - Estado del recibo (`status`)
+   *
+   * La paginación incluye metainformación: total de elementos, página actual y total de páginas.
+   *
+   * @param query Parámetros de búsqueda y paginación.
+   * @returns Lista de recibos y metadatos de paginación.
+   */
   async findAll(query: IReceiptQueryParams) {
     const { page = 1, pageSize = 10, from, to, type, status } = query;
-
-    const skip = (Number(page) - 1) * Number(pageSize);
+    const skip = (page - 1) * pageSize;
     const where: any = {};
 
     if (from && to) {
-      where.issueDate = { gte: new Date(from), lte: new Date(to) };
+      where.issueDate = {
+        gte: DateTime.fromISO(from).toJSDate(),
+        lte: DateTime.fromISO(to).toJSDate(),
+      };
     }
-
     if (type) where.documentType = type;
     if (status) where.status = status;
 
@@ -69,53 +84,69 @@ export class ReceiptService {
       prisma.receipt.findMany({
         where,
         skip,
-        take: Number(pageSize),
+        take: pageSize,
         orderBy: { issueDate: 'desc' },
       }),
       prisma.receipt.count({ where }),
     ]);
 
-    const totalPages = Math.ceil(total / Number(pageSize));
-
     return {
       data,
       meta: {
         total,
-        page: Number(page),
-        pageSize: Number(pageSize),
-        totalPages,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
       },
     };
   }
 
-  async updateStatus(id: string, updateReceiptDto: IUpdateStatusReceiptDto) {
-    const receipt = await this.findOne(id);
-    const receiptUpdated = await prisma.receipt.update({
-      data: {
-        ...receipt,
-        status: updateReceiptDto.status as EReceiptStatus,
-      },
+  /**
+   * Actualiza el estado de un recibo específico.
+   *
+   * Validaciones:
+   * - Verifica que el recibo exista previamente.
+   *
+   * @param id ID del recibo a actualizar.
+   * @param dto Datos con el nuevo estado.
+   * @returns El recibo actualizado.
+   * @throws BadRequestException Si el recibo no existe.
+   */
+  async updateStatus(id: string, dto: IUpdateStatusReceiptDto) {
+    await this.findOne(id);
+    return await prisma.receipt.update({
+      data: { status: dto.status as ReceiptStatus },
       where: { id },
     });
-    return receiptUpdated;
   }
 
-  async remove(id: string) {
-    const receiptRemoved = await prisma.receipt.delete({
-      where: { id },
-    });
-    return receiptRemoved;
-  }
-
+  /**
+   * Exporta los recibos como archivo CSV codificado en Base64.
+   *
+   * Filtra por fecha, tipo y estado.
+   * Usa `ReceiptCalculator` para calcular IGV y Total por fila.
+   * Usa `luxon` para formato de fechas.
+   *
+   * @param query Parámetros de búsqueda.
+   * @returns CSV como string en base64.
+   */
   async exportToCsv(query: IReceiptQueryParams): Promise<string> {
     const { from, to, type, status } = query;
 
     const where: any = {};
 
-    if (from && to) {
-      where.issueDate = { gte: new Date(from), lte: new Date(to) };
+    if (from) {
+      where.issueDate = {
+        ...(where.issueDate || {}),
+        gte: DateTime.fromISO(from).toJSDate(),
+      };
     }
-
+    if (to) {
+      where.issueDate = {
+        ...(where.issueDate || {}),
+        lte: DateTime.fromISO(to).toJSDate(),
+      };
+    }
     if (type) where.documentType = type;
     if (status) where.status = status;
 
@@ -124,25 +155,53 @@ export class ReceiptService {
       orderBy: { issueDate: 'desc' },
     });
 
-    const headers = ['ID', 'Monto', 'IGV', 'Total', 'Estado', 'Fecha'];
-    const rows = receipts.map((r) => {
-      const igv = r.amount * 0.18;
-      const total = r.amount + igv;
-      const estado = this.mapStatus(r.status);
-      return [
-        r.id,
-        r.amount.toFixed(2),
-        igv.toFixed(2),
-        total.toFixed(2),
-        estado,
-        new Date(r.issueDate).toLocaleDateString(),
-      ];
-    });
+    const csv = [this.csvHeaders(), ...receipts.map((r) => this.toCsvRow(r))]
+      .map((r) => r.join(','))
+      .join('\n');
 
-    const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
-
-    // Si necesitas base64 para el frontend
     return Buffer.from(csv).toString('base64');
+  }
+
+  private calculateAmounts(amount: number) {
+    const base = currency(amount);
+    const igv = base.multiply(0.18);
+    const total = base.add(igv);
+    return { igv: igv.value, total: total.value };
+  }
+
+  private toCsvRow(receipt: any): string[] {
+    const { igv, total } = this.calculateAmounts(receipt.amount);
+    return [
+      receipt.companyId,
+      receipt.documentNumber,
+      receipt.invoiceNumber,
+      receipt.amount.toFixed(2),
+      igv.toFixed(2),
+      total.toFixed(2),
+      this.mapStatus(receipt.status),
+      DateTime.fromJSDate(receipt.issueDate).toFormat('dd/MM/yyyy'),
+    ];
+  }
+
+  private csvHeaders(): string[] {
+    return [
+      'Empresa ID',
+      'Nro. Documento',
+      'Nro. Factura',
+      'Monto',
+      'IGV',
+      'Total',
+      'Estado',
+      'Fecha de Emisión',
+    ];
+  }
+
+  async findOne(id: string) {
+    const findReceipt = await prisma.receipt.findUnique({ where: { id } });
+    if (!findReceipt) {
+      throw new BadRequestException(`Receipt with id ${id} not found`);
+    }
+    return findReceipt;
   }
 
   private mapStatus(status: ReceiptStatus): string {

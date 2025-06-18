@@ -1,44 +1,58 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import OpenAI from 'openai';
+import { ReceiptService } from '../receipt/receipt.service';
 
 @Injectable()
 export class OpenAiService {
   private readonly openai: OpenAI;
 
-  constructor() {
+  constructor(private receiptService: ReceiptService) {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
   }
 
-  async askQuestion(receipts: any[], prompt: string): Promise<string> {
-    const context = receipts
-      .map(
-        (r) =>
-          `ID: ${r.id}, Monto: ${r.amount}, Estado: ${r.status}, Fecha: ${r.issueDate}`,
-      )
-      .join('\n');
+  setDependencies(receiptService: ReceiptService) {
+    this.receiptService = receiptService;
+  }
+
+  /**
+   * Consulta el modelo GPT de OpenAI usando como contexto un CSV con información de recibos.
+   *
+   * @param prompt Texto de la pregunta del usuario (debe estar en lenguaje natural y estar relacionada con los datos del CSV).
+   * @returns La respuesta generada por el modelo GPT como un string limpio y formateado.
+   * @throws {InternalServerErrorException} Si la llamada a la API de OpenAI falla o si no se recibe una respuesta válida.
+   */
+  async askQuestion(prompt: string): Promise<string> {
+    const receiptsCsv = await this.receiptService.exportToCsv({});
+    const csv = Buffer.from(receiptsCsv, 'base64').toString('utf-8');
 
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
       {
         role: 'system',
         content:
-          'Eres un asistente que responde preguntas basadas en datos de comprobantes.',
+          'Eres un asistente experto en análisis financiero. Responde de forma clara y precisa usando los datos proporcionados en el CSV.',
       },
       {
         role: 'user',
-        content: `Aquí están los datos:\n${context}\n\nPregunta: ${prompt}`,
+        content: `Estos son los datos en CSV:\n\n${csv}\n\nPregunta: ${prompt}`,
       },
     ];
 
-    const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4',
-      messages,
-    });
+    try {
+      const completion = await this.openai.chat.completions.create({
+        model: 'gpt-4',
+        messages,
+        temperature: 0.2,
+      });
 
-    const raw = completion.choices[0].message.content || 'Sin respuesta.';
-    const formatted = raw.trim().replace(/\n{2,}/g, '\n');
-
-    return formatted;
+      const raw = completion.choices?.[0]?.message?.content ?? 'Sin respuesta.';
+      return raw.trim().replace(/\n{2,}/g, '\n');
+    } catch (error) {
+      console.error('Error calling OpenAI:', error);
+      throw new InternalServerErrorException(
+        'Error OpenAI API. Please try again later.',
+      );
+    }
   }
 }

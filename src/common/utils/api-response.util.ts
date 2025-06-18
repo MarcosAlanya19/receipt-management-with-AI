@@ -1,12 +1,12 @@
 import { ApiResponse } from '../interfaces/api-response.interface';
 import { isValidValue } from './is-valid-value.util';
 
-export const apiResponse = <T = any>({
+export const apiResponse = <T>({
   status,
   message,
   data,
   meta,
-}: ApiResponse): ApiResponse => ({
+}: ApiResponse<T>): ApiResponse<T> => ({
   message,
   ...(isValidValue(status) && { status }),
   ...(isValidValue(data) && { data }),

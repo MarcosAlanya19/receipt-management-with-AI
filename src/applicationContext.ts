@@ -1,10 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app.module';
+import { OpenAiModule } from './openAI/open-ai.module';
 import { ReceiptModule } from './receipt/receipt.module';
 import { SunatModule } from './sunat/sunat.module';
-import { OpenAiModule } from './openAI/open-ai.module';
 
+import { configureLuxon } from './config/luxon.config';
 import { OpenAiService } from './openAI/open-ai.service';
 import { ReceiptService } from './receipt/receipt.service';
 import { SunatService } from './sunat/sunat.service';
@@ -16,6 +17,8 @@ const applicationContext: Promise<{
   sunatService: SunatService;
   openAiService: OpenAiService;
 }> = NestFactory.createApplicationContext(AppModule).then((app) => {
+  configureLuxon();
+
   return {
     receiptService: app
       .select(ReceiptModule)

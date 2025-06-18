@@ -1,3 +1,4 @@
 import { ApiResponse } from '../../common/interfaces/api-response.interface';
+import { IReceipt } from './receipt.interface';
 
-export type IReceiptResponse = ApiResponse;
+export type IReceiptResponse = ApiResponse<IReceipt[]>;

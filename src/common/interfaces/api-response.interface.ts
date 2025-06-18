@@ -1,7 +1,7 @@
-export interface ApiResponse {
+export interface ApiResponse<T> {
   status?: number;
   message: string;
-  data?: any;
+  data?: T;
   meta?: {
     total: number;
     page: number;

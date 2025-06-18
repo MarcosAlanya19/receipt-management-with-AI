@@ -12,6 +12,7 @@ import { ApiResponse } from '../common/interfaces/api-response.interface';
 import { ICreateReceiptResponse } from './interfaces/create-receipt-response.interface';
 import { IReceiptQueryParams } from './interfaces/receipt-query-params.interface';
 import { IReceiptResponse } from './interfaces/receipt-response.interface';
+import { IReceipt } from './interfaces/receipt.interface';
 
 const { receiptService, sunatService } = await applicationContext;
 receiptService.setDependencies(sunatService);
@@ -22,13 +23,13 @@ export const createReceipt = api<ICreateReceiptDto, ICreateReceiptResponse>(
     path: '/receipt',
     expose: true,
   },
-  async (params): Promise<ICreateReceiptResponse> => {
-    const receipt = await receiptService.create(params);
+  async (dto): Promise<ICreateReceiptResponse> => {
+    const createdReceipt = (await receiptService.create(dto)) as IReceipt;
 
     return apiResponse({
-      message: 'Receipt created successfully',
-      data: receipt,
-      status: HttpStatus.OK,
+      message: 'Recepción creada correctamente',
+      status: HttpStatus.CREATED,
+      data: createdReceipt,
     });
   },
 );
@@ -40,21 +41,23 @@ export const findAllReceipts = api<IReceiptQueryParams, IReceiptResponse>(
     expose: true,
   },
   async (query: IReceiptQueryParams): Promise<IReceiptResponse> => {
-    const { page, pageSize, from, to, type, status } = query;
+    const { page = 1, pageSize = 10, from, to, type, status } = query;
 
-    const receipts = await receiptService.findAll({
-      page: page || 1,
-      pageSize: pageSize || 10,
+    const filters: IReceiptQueryParams = {
+      page,
+      pageSize,
       ...(isValidValue(from) && isValidValue(to) && { from, to }),
       ...(isValidValue(type) && { type }),
       ...(isValidValue(status) && { status }),
-    });
+    };
+
+    const { data, meta } = await receiptService.findAll(filters);
 
     return apiResponse({
       status: HttpStatus.OK,
-      message: 'Receipts fetched successfully',
-      data: receipts.data ?? [],
-      meta: receipts.meta,
+      message: 'Recepciones obtenidas correctamente',
+      data: data as IReceipt[],
+      meta,
     });
   },
 );
@@ -74,25 +77,31 @@ export const updateStatusReceipt = api<
   }: {
     id: string;
   } & IUpdateStatusReceiptDto): Promise<ICreateReceiptResponse> => {
-    const receipt = await receiptService.updateStatus(id, dto);
+    const updatedReceipt = (await receiptService.updateStatus(
+      id,
+      dto,
+    )) as IReceipt;
 
     return apiResponse({
       status: HttpStatus.OK,
-      message: 'Receipt status updated successfully',
-      data: receipt,
+      message: `Estado de la recepción actualizado a ${updatedReceipt.status}`,
+      data: updatedReceipt,
     });
   },
 );
 
-export const exportReceiptsCsv = api<IReceiptQueryParams, ApiResponse>(
-  { expose: true, method: 'GET', path: '/receipts/export' },
-  async (query: IReceiptQueryParams) => {
-    const { receiptService } = await applicationContext;
+export const exportReceiptsCsv = api<IReceiptQueryParams, ApiResponse<string>>(
+  {
+    method: 'GET',
+    path: '/receipts/export',
+    expose: true,
+  },
+  async (query) => {
     const csvBase64 = await receiptService.exportToCsv(query);
 
     return apiResponse({
-      status: 200,
-      message: 'Receipts exported successfully',
+      message: 'Recepciones exportadas correctamente',
+      status: HttpStatus.OK,
       data: csvBase64,
     });
   },
