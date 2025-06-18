@@ -1,5 +1,11 @@
-export interface ApiResponse<T = any> {
+export interface ApiResponse {
   status?: number;
   message: string;
-  data?: T;
+  data?: any;
+  meta?: {
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  }
 }
