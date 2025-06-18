@@ -1,35 +1,63 @@
-# NestJS + Encore Example
+# 🧾 Proyecto: Gestión de Comprobantes con IA
 
-This is an [Encore.ts](https://encore.dev/) + [NestJS](https://docs.nestjs.com/) example. It's a great way to learn how to combine Encore's backend 
-capabilities with a modern web framework — perfect for building a web app.
+Este proyecto es una API desarrollada con **NestJS** sobre la plataforma **Encore**, que permite la gestión de comprobantes (recibos) y la generación de respuestas inteligentes mediante **OpenAI**.
 
-## Developing locally
+## 🚀 Endpoints Principales
 
-When you have [installed Encore](https://encore.dev/docs/ts/install), you can create a new Encore application and clone this example with this command.
+### 📄 `/receipt` – Gestión de Recibos
+- `POST /receipt`: Crear nuevo recibo.
+- `GET /receipt`: Listar con filtros (fecha, estado, tipo, etc.).
+- `PUT /receipt/:id`: Actualizar estado del recibo.
+- `GET /receipts/export`: Exportar CSV en Base64.
 
-```bash
-encore app create my-app-name --example=ts/nestjs
-```
+### 🤖 `/openai/receipts`
+- `POST`: Enviar pregunta basada en comprobantes exportados (CSV).  
+  **Body:** `{ "prompt": "¿Cuál fue el monto total validado en mayo?" }`
 
-## Running locally
-```bash
-encore run
-```
+## 🛠️ Instalación y configuración
 
-You can also access Encore's [local developer dashboard](https://encore.dev/docs/ts/observability/dev-dash) on <http://localhost:9400/> to view traces, API documentation, and more.
+1. **Clonar el proyecto**
+   ```bash
+   git clone https://github.com/tu-usuario/tu-proyecto.git
+   cd tu-proyecto
+   ```
 
-## Deployment
+2. **Instalar dependencias**
+   ```bash
+   npm install
+   ```
 
-Deploy your application to a staging environment in Encore's free development cloud:
+3. **Configurar variables de entorno**
+   Crea un archivo `.env` basado en `.env.example`:
 
-```bash
-git add -A .
-git commit -m 'Commit message'
-git push encore
-```
+   ```env
+   DATABASE_URL=postgresql://user:password@localhost:5432/mydb
+   OPENAI_API_KEY=sk-xxx
+   ```
 
-Then head over to the [Cloud Dashboard](https://app.encore.dev) to monitor your deployment and find your production URL.
+4. **Inicializar base de datos**
+   ```bash
+   npx prisma migrate dev
+   ```
 
-From there you can also connect your own AWS or GCP account to use for deployment.
+5. **Correr seed**
+   ```bash
+   npm run seed
+   ```
 
-Now off you go into the clouds!
+5. **Ejecutar en desarrollo**
+   ```bash
+   npm run dev
+   ```
+
+## 🔐 Seguridad y buenas prácticas
+
+- Control de errores con `try/catch` y excepciones HTTP.
+- Sanitización de entrada para evitar prompts vacíos.
+- Logs controlados de errores con trazabilidad.
+
+## 🧑‍💻 Autor
+
+**Marcos Alanya Pacheco**  
+DesarrolladorFullstack  
+📧 asesoralanya19@gmail.com

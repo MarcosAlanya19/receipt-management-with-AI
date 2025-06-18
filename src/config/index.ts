@@ -11,5 +11,9 @@ export const configuration = () => {
 };
 
 export const validationSchema = Joi.object({
-  DATABASE_URL: Joi.string().required(),
+  DATABASE_URL: Joi.string().uri().required(),
+  PORT: Joi.number().default(4000),
+  NODE_ENV: Joi.string().valid('dev', 'prod').default('dev'),
+  VERSION: Joi.string().default('v1'),
+  OPENAI_API_KEY: Joi.string().required(),
 });

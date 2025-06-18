@@ -30,12 +30,16 @@ export class OpenAiService {
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
       {
         role: 'system',
-        content:
-          'Eres un asistente experto en análisis financiero. Responde de forma clara y precisa usando los datos proporcionados en el CSV.',
+        content: `
+            Eres un analista financiero inteligente y preciso.
+            Tienes acceso a la información completa de ingresos, egresos y operaciones contables de una empresa.
+            Responde con claridad, sin mencionar el origen de los datos, y redacta respuestas limpias, sin comillas ni formato de código.
+            Utiliza un lenguaje profesional, pero comprensible.
+        `,
       },
       {
         role: 'user',
-        content: `Estos son los datos en CSV:\n\n${csv}\n\nPregunta: ${prompt}`,
+        content: `Pregunta: ${prompt}\n\nDatos:\n\n${csv}`,
       },
     ];
 
