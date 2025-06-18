@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { DocumentType, ReceiptStatus } from '@prisma/client';
+import { Prisma, ReceiptStatus } from '@prisma/client';
 import currency from 'currency.js';
 import { DateTime } from 'luxon';
 import { prisma } from '../prisma/database';
@@ -10,6 +10,7 @@ import { ICreateReceiptDto } from './dto/create-receipt.dto';
 import { IUpdateStatusReceiptDto } from './dto/update-status-receipt.dto';
 
 import { EDocumentType } from './enum/EDocumentType.enum';
+import { EReceiptStatus } from './enum/EReceiptStatus.enum';
 import { IReceiptQueryParams } from './interfaces/receipt-query-params.interface';
 
 @Injectable()
@@ -49,7 +50,7 @@ export class ReceiptService {
         total,
         status: ReceiptStatus.PENDING,
         issueDate: DateTime.fromISO(createReceiptDto.issueDate).toJSDate(),
-        documentType: createReceiptDto.documentType as DocumentType,
+        documentType: createReceiptDto.documentType as EDocumentType,
       },
     });
   }
@@ -68,18 +69,10 @@ export class ReceiptService {
    * @returns Lista de recibos y metadatos de paginación.
    */
   async findAll(query: IReceiptQueryParams) {
-    const { page = 1, pageSize = 10, from, to, type, status } = query;
+    const { page = 1, pageSize = 10 } = query;
     const skip = (page - 1) * pageSize;
-    const where: any = {};
 
-    if (from && to) {
-      where.issueDate = {
-        gte: DateTime.fromISO(from).toJSDate(),
-        lte: DateTime.fromISO(to).toJSDate(),
-      };
-    }
-    if (type) where.documentType = type;
-    if (status) where.status = status;
+    const where = this.buildReceiptFilters(query);
 
     const [data, total] = await Promise.all([
       prisma.receipt.findMany({
@@ -116,7 +109,7 @@ export class ReceiptService {
   async updateStatus(id: string, dto: IUpdateStatusReceiptDto) {
     await this.findOne(id);
     return await prisma.receipt.update({
-      data: { status: dto.status as ReceiptStatus },
+      data: { status: dto.status as EReceiptStatus },
       where: { id },
     });
   }
@@ -132,24 +125,7 @@ export class ReceiptService {
    * @returns CSV como string en base64.
    */
   async exportToCsv(query: IReceiptQueryParams): Promise<string> {
-    const { from, to, type, status } = query;
-
-    const where: any = {};
-
-    if (from) {
-      where.issueDate = {
-        ...(where.issueDate || {}),
-        gte: DateTime.fromISO(from).toJSDate(),
-      };
-    }
-    if (to) {
-      where.issueDate = {
-        ...(where.issueDate || {}),
-        lte: DateTime.fromISO(to).toJSDate(),
-      };
-    }
-    if (type) where.documentType = type;
-    if (status) where.status = status;
+    const where = this.buildReceiptFilters(query);
 
     const receipts = await prisma.receipt.findMany({
       where,
@@ -161,6 +137,51 @@ export class ReceiptService {
       .join('\n');
 
     return Buffer.from(csv).toString('base64');
+  }
+
+  private buildReceiptFilters(
+    query: IReceiptQueryParams,
+  ): Prisma.ReceiptWhereInput {
+    const { from, to, type, status } = query;
+    const where: Prisma.ReceiptWhereInput = {};
+
+    const hasFrom = typeof from === 'string' && from.trim() !== '';
+    const hasTo = typeof to === 'string' && to.trim() !== '';
+
+    if (hasFrom !== hasTo) {
+      throw new BadRequestException(
+        `Debe proporcionar tanto 'from' como 'to' juntos.`,
+      );
+    }
+
+    if (hasFrom && hasTo) {
+      const parsedFrom = DateTime.fromISO(from);
+      const parsedTo = DateTime.fromISO(to);
+
+      if (!parsedFrom.isValid) {
+        throw new BadRequestException(`Fecha 'from' inválida: ${from}`);
+      }
+
+      if (!parsedTo.isValid) {
+        throw new BadRequestException(`Fecha 'to' inválida: ${to}`);
+      }
+
+      if (parsedFrom > parsedTo) {
+        throw new BadRequestException(
+          `La fecha 'from' no puede ser mayor que 'to'`,
+        );
+      }
+
+      where.issueDate = {
+        gte: parsedFrom.startOf('day').toJSDate(),
+        lte: parsedTo.endOf('day').toJSDate(),
+      };
+    }
+
+    if (type) where.documentType = type;
+    if (status) where.status = status;
+
+    return where;
   }
 
   private calculateAmounts(amount: number) {

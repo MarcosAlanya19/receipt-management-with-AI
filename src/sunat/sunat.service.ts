@@ -20,20 +20,12 @@ export class SunatService {
       if (value === '20123456789') {
         return {
           success: true,
-          name: 'EMPRESA SAC',
-          status: 'ACTIVE',
-          condition: 'HABIDO',
-          address: '123 PERU AVE',
         };
       }
 
       if (value === '20456789012') {
         return {
           success: true,
-          name: 'EMPRESA INACTIVA SAC',
-          status: 'INACTIVE',
-          condition: 'NO HABIDO',
-          address: 'AV. LOS ROBLES 456',
         };
       }
 
@@ -44,18 +36,12 @@ export class SunatService {
       if (value === '12345678') {
         return {
           success: true,
-          name: 'JUAN PEREZ',
-          status: 'ACTIVE',
-          condition: 'HABIDO',
         };
       }
 
       if (value === '87654321') {
         return {
           success: true,
-          name: 'MARIA LOPEZ',
-          status: 'INACTIVE',
-          condition: 'HABIDO',
         };
       }
 
