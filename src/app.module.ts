@@ -1,7 +1,15 @@
 import { Module } from '@nestjs/common';
-import { CatsModule } from './cats/cats.module';
+import { ConfigModule } from '@nestjs/config';
+import { configuration, validationSchema } from './config/configuration';
 
 @Module({
-  imports: [CatsModule],
+  imports: [
+    ConfigModule.forRoot({
+      envFilePath: '.env',
+      isGlobal: true,
+      load: [configuration],
+      validationSchema,
+    }),
+  ],
 })
 export class AppModule {}
