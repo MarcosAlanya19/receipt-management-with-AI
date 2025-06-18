@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { DocumentType } from '@prisma/client';
-import { SunatValidationDto } from './dto/sunat-validation.dto';
-import { SunatResponse } from './interfaces/sunat-response.interface';
+import { ISunatValidationDto } from './dto/sunat-validation.dto';
+import { ISunatResponse } from './interfaces/sunat-response.interface';
 
 @Injectable()
 export class SunatService {
-  validateSunatData({ type, value }: SunatValidationDto): SunatResponse {
+  validateSunatData({ type, value }: ISunatValidationDto): ISunatResponse {
     console.log('Validating SUNAT data:', { type, value });
     if (type === DocumentType.RUC) {
       if (value === '20123456789') {

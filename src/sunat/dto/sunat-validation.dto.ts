@@ -1,4 +1,4 @@
-export interface SunatValidationDto {
+export interface ISunatValidationDto {
   type: string;
   value: string;
 }

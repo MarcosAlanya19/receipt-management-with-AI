@@ -1,4 +1,4 @@
-export interface SunatResponse {
+export interface ISunatResponse {
   success: boolean;
   message: string;
   data?: {
